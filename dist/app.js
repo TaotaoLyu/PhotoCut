@@ -384,7 +384,7 @@ async function loadScript(src) {
 
 async function loadLocalAssets() {
   // Classic scripts can load from disk without a Fetch request to a file URL.
-  await loadScript('./assets/local-preview.js');
+  await loadScript('./dist/assets/local-preview.js');
   try {
     const assets = window.photoCutLocalAssets;
     if (!assets) throw new Error('The local preview assets are missing.');
@@ -395,10 +395,10 @@ async function loadLocalAssets() {
 }
 
 async function loadFaceModel(localAssets) {
-  await loadScript('./assets/face-api.min.js');
+  await loadScript('./dist/assets/face-api.min.js');
   const detector = faceapi.nets.tinyFaceDetector;
   if (!localAssets) {
-    await detector.loadFromUri('./models');
+    await detector.loadFromUri('./dist/models');
     return;
   }
 
@@ -424,5 +424,5 @@ if (localAssets) {
     () => { if (!state.fileToken) toast('Could not open the sample photo. You can still open your own photo.'); }
   );
 } else {
-  loadImage('./assets/demo.jpg', 'sample-portrait.jpg', true);
+  loadImage('./dist/assets/demo.jpg', 'sample-portrait.jpg', true);
 }
