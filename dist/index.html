@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#216249">
+  <meta name="description" content="Crop ID photos in your browser with automatic face centering, custom dimensions, and full-resolution export.">
+  <title>PhotoCut</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+<svg class="svg-sprite" aria-hidden="true"><defs>
+<symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 3v15h15M3 6h15v15"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-4 4 4-4 4 4M4 15v5h16v-5"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-4-4 4 4 4-4M4 16v5h16v-5"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3ZM20 2v4m-2-2h4"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-rotate" viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 1 9M4 3v6h6"/></symbol>
+<symbol id="i-flip" viewBox="0 0 24 24"><path d="M12 3v18M8 6 3 18h5V6Zm8 0 5 12h-5V6Z"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 1 9M4 3v6h6"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18m6-18v18M3 9h18M3 15h18"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v1"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1"/><path d="m3 17 6-6 4 4 3-3 5 5"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="m8 5-5 5 5 5M3 10h11a6 6 0 0 1 6 6v3"/></symbol>
+</defs></svg>
+<header class="topbar">
+  <div class="container topbar-inner">
+    <h1 class="site-title">
+      <a class="brand" href="./" target="_blank" rel="noopener" aria-label="PhotoCut home">
+        <span class="brand-icon"><svg><use href="#i-crop"/></svg></span>
+        PhotoCut
+      </a>
+    </h1>
+    <button class="guide-btn" id="helpBtn">Guide</button>
+  </div>
+</header>
+<main class="container">
+  <div class="workspace">
+    <aside class="panel settings" aria-labelledby="settingsTitle">
+      <h2 id="settingsTitle">Crop size</h2>
+      <div class="segmented" role="tablist" aria-label="Crop size type">
+        <button class="active" id="presetTab" role="tab" aria-selected="true" aria-controls="presetPanel">Presets</button>
+        <button id="customTab" role="tab" aria-selected="false" aria-controls="customPanel">Custom</button>
+      </div>
+      <div id="presetPanel" role="tabpanel" aria-labelledby="presetTab">
+        <p class="field-caption">ID photos <span>Width × height</span></p>
+        <div class="presets" id="presets"></div>
+      </div>
+      <div id="customPanel" role="tabpanel" aria-labelledby="customTab" hidden>
+        <div>
+          <label class="field-caption" for="unit">Unit</label>
+          <select id="unit"><option value="mm">Millimeters (mm)</option><option value="px">Pixels (px)</option><option value="ratio">Aspect ratio</option></select>
+        </div>
+        <div class="dimensions">
+          <label>Width<input id="customWidth" type="number" value="25" min="1" max="1000" step="0.1"></label>
+          <span aria-hidden="true">×</span>
+          <label>Height<input id="customHeight" type="number" value="35" min="1" max="1000" step="0.1"></label>
+        </div>
+        <div class="ratios" id="ratios" role="group" aria-label="Aspect ratio shortcuts">
+          <button data-ratio="1,1" style="--ratio: 1 / 1">1:1</button>
+          <button data-ratio="3,4" style="--ratio: 3 / 4">3:4</button>
+          <button data-ratio="4,3" style="--ratio: 4 / 3">4:3</button>
+          <button data-ratio="16,9" style="--ratio: 16 / 9">16:9</button>
+        </div>
+        <button class="outline full" id="applyCustom">Apply size <svg><use href="#i-arrow"/></svg></button>
+      </div>
+      <div class="face-controls">
+        <div class="divider"></div>
+        <h3>Face centering</h3>
+        <button class="smart-btn full" id="smartBtn" disabled><svg><use href="#i-spark"/></svg> Auto-frame photo</button>
+        <div class="smart-status" id="smartStatus" role="status"><span class="status-dot"></span><span>Loading face detection…</span></div>
+      </div>
+    </aside>
+
+    <section class="panel editor" aria-label="Photo editor">
+      <div class="editor-heading">
+        <div class="file-info">
+          <span class="file-icon"><svg><use href="#i-image"/></svg></span>
+          <div><strong id="fileName">sample-portrait.jpg</strong><span id="fileMeta">Sample photo</span></div>
+        </div>
+        <button class="outline" id="uploadBtn"><svg><use href="#i-upload"/></svg> Open photo</button>
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      </div>
+      <div class="stage" id="stage">
+        <canvas id="editorCanvas" tabindex="0" role="img" aria-label="Crop editor. Drag the photo to move it, scroll or pinch to zoom, or use the arrow keys to nudge."></canvas>
+        <div class="stage-label"><span></span><span id="stageSize">1-inch · 25 × 35 mm</span></div>
+        <button class="grid-btn active" id="gridBtn" title="Toggle crop grid" aria-label="Toggle crop grid" aria-pressed="true"><svg><use href="#i-grid"/></svg></button>
+        <div class="drop-overlay" id="dropOverlay"><svg><use href="#i-upload"/></svg><strong>Drop a photo to crop it</strong><span>JPG, PNG, or WebP · up to 30 MB</span></div>
+        <div class="load-overlay" id="loadOverlay" hidden><span class="spinner"></span>Opening photo…</div>
+      </div>
+      <div class="editor-toolbar">
+        <div class="transform-tools">
+          <button id="rotateBtn" aria-label="Rotate left 90 degrees" title="Rotate left 90°"><svg><use href="#i-rotate"/></svg></button>
+          <button id="flipBtn" aria-label="Flip horizontally" title="Flip horizontally"><svg><use href="#i-flip"/></svg></button>
+          <span class="tool-separator" aria-hidden="true"></span>
+          <button id="undoBtn" aria-label="Undo" title="Undo"><svg><use href="#i-undo"/></svg></button>
+          <button id="resetBtn" aria-label="Reset crop" title="Reset crop"><svg><use href="#i-reset"/></svg></button>
+        </div>
+        <div class="zoom-tools">
+          <button id="zoomOut" aria-label="Zoom out">−</button>
+          <input id="zoom" aria-label="Zoom" type="range" min="100" max="500" value="100">
+          <button id="zoomIn" aria-label="Zoom in">+</button>
+          <output id="zoomValue" for="zoom">100%</output>
+        </div>
+      </div>
+      <div class="editor-hint">
+        <span>Drag to move</span>
+        <span class="desktop-hint">Scroll to zoom</span><span class="touch-hint">Pinch to zoom</span>
+        <span class="desktop-hint">Arrow keys to nudge</span>
+      </div>
+    </section>
+
+    <aside class="panel export-panel" aria-labelledby="exportTitle">
+      <div class="preview-block">
+        <h2 id="exportTitle">Preview &amp; export</h2>
+        <div class="preview-area"><canvas id="previewCanvas" role="img" aria-label="Live crop preview"></canvas></div>
+        <div class="preview-caption"><strong id="previewName">1-inch ID photo</strong><span id="previewPhysical">25 × 35 mm</span></div>
+      </div>
+      <div class="export-controls">
+        <div class="field-row">
+          <label for="dpi">Resolution</label>
+          <select id="dpi"><option value="300">300 DPI</option><option value="150">150 DPI</option><option value="600">600 DPI</option><option value="original">Original pixels</option></select>
+        </div>
+        <div class="output-size"><span>Output size</span><strong id="outputSize">295 × 413 px</strong></div>
+        <p class="resolution-note" id="resolutionNote"><svg aria-hidden="true"><use id="resolutionIcon" href="#i-check"/></svg><span id="resolutionText">Sized for print</span></p>
+        <div class="field-caption format-label" id="formatLabel">File format</div>
+        <div class="segmented" role="group" aria-labelledby="formatLabel">
+          <button class="active" data-format="image/jpeg" aria-pressed="true">JPG</button><button data-format="image/png" aria-pressed="false">PNG</button>
+        </div>
+        <button class="download-btn full" id="downloadBtn" disabled><svg><use href="#i-download"/></svg> Download photo</button>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer>
+  <div class="container footer-inner">
+    <strong>PhotoCut</strong>
+    <span class="footer-credit">Powered by <a href="https://github.com/TaotaoLyu/PhotoCut" target="_blank" rel="noopener">Taotao Lyu</a></span>
+    <span class="footer-privacy"><svg><use href="#i-lock"/></svg> Photos stay on your device.</span>
+  </div>
+</footer>
+
+<div id="toast" class="toast" role="status" hidden></div>
+<dialog id="sizeErrorDialog" aria-labelledby="sizeErrorTitle" aria-describedby="customError">
+  <h2 id="sizeErrorTitle">Check your crop size</h2>
+  <p id="customError"></p>
+  <form class="dialog-actions" method="dialog">
+    <button class="outline" autofocus>OK</button>
+  </form>
+</dialog>
+<dialog id="helpDialog" aria-labelledby="guideTitle">
+  <div class="dialog-header">
+    <h2 id="guideTitle">How to crop a photo</h2>
+    <button id="closeHelp" aria-label="Close guide">×</button>
+  </div>
+  <ol>
+    <li><strong>Open a photo</strong><p>Choose a JPG, PNG, or WebP file up to 30 MB, or drag it into the editor. For an ID photo, use a well-lit, front-facing portrait with room around your head and shoulders.</p></li>
+    <li><strong>Set the crop size and adjust the framing</strong><p>Choose an ID photo preset or enter a custom size. Auto-frame centers the largest detected face. Drag to move the photo, scroll or pinch to zoom, and use the arrow keys for small adjustments. Hold Shift to move faster.</p></li>
+    <li><strong>Download your photo</strong><p>Check the preview and choose JPG or PNG. Select Original pixels to keep the source resolution within the crop. With a DPI setting, pixel mode exports at the entered dimensions and aspect ratio mode uses 1,200 px on the long edge.</p></li>
+  </ol>
+  <p class="help-footnote">PhotoCut crops your photo and keeps the original background. Check the submission requirements for dimensions, background, and file size.</p>
+  <p class="help-footnote help-credits">Sample photo by <a href="https://unsplash.com/photos/mEZ3PoFGs_k" target="_blank" rel="noopener">Joseph Gonzalez on Unsplash</a>. Face detection by <a href="https://github.com/justadudewhohacks/face-api.js" target="_blank" rel="noopener">face-api.js (MIT)</a>.</p>
+</dialog>
+</body>
+</html>
+
